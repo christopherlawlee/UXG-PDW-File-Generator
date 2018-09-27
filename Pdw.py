@@ -70,11 +70,12 @@ class Pdw():
     def read_csv(self):
         pass
 
-    def bin_field(value_dec, num_bits):
+    def bin_field(self, value_dec, num_bits):
         ''' This function takes a decimal integer value and converts it to a binary 
         string with a specified number of bits. The '0b' that is normally returned 
         with bin() is omitted.
         '''
+        
         try:
             result = bin(value_dec)[2:].zfill(num_bits)
         except Exception:
@@ -82,10 +83,11 @@ class Pdw():
         else:
             return result
 
-    def bin_word(field_list):
+    def bin_word(self, field_list):
         ''' This function joins together all of the fields within a word to make a 
         single binary string.
         '''
+        
         try:
             result = ''.join(field_list[::-1])
         except Exception:
@@ -93,11 +95,12 @@ class Pdw():
         else:
             return result
 
-    def byte_array(bin_word_str):
+    def byte_array(self, bin_word_str):
         ''' This function breaks a binary word string up into a list of bytes. '''
+        
         byte = ''
         result = []
-
+        
         try:
             for idx, bit in enumerate(bin_word_str):
                 byte = byte + bit
@@ -109,42 +112,45 @@ class Pdw():
         else:
             return result
 
-    def word(*args):
+    def word(self, *args):
         ''' This function takes in a variable number of 2-element list arguments,
         each representing fields within a pdw, and returns a list of byte strings.
-
+        
         Keyword arguments:
         arg = [value, num_bits]
         '''
+        
         field_list = []
-
+        
         try:
             for arg in args:
-                arg_bin = bin_field(arg[0],arg[1])
+                arg_bin = self.bin_field(arg[0],arg[1])
                 field_list.append(arg_bin)
-                bin_word_str = bin_word(field_list)
-            result = byte_array(bin_word_str)
+                bin_word_str = self.bin_word(field_list)
+            result = self.byte_array(bin_word_str)
         except Exception:
             raise
         else:
             return result
 
-    word_bytes = word(
-        [self.pdw_format,num_bits['pdw_format']],
-        [self.marked_operation,num_bits['marked_operation']],
-        [self.frequency,num_bits['frequency']],
-        [self.phase,num_bits['phase']],
-        [self.pulse_start_time,num_bits['pulse_start_time']],
-        [self.pulse_width,num_bits['pulse_width']],
-        [self.relative_power,num_bits['relative_power']],
-        [self.markers,num_bits['markers']],
-        [self.pulse_mode,num_bits['pulse_mode']],
-        [self.phase_control,num_bits['phase_control']],
-        [self.band_adjust,num_bits['band_adjust']],
-        [self.chirp_control,num_bits['chirp_control']],
-        [self.freq_phase_coding,num_bits['freq_phase_coding']],
-        [self.chirp_rate,num_bits['chirp_rate']],
-        [self.freq_band_map,num_bits['freq_band_map']])
+pdw_test = Pdw(1,10**9,0,100000000,500000,26624,'NONE',2,0,0,1,0,0,0)
+
+word_bytes = pdw_test.word(
+    [pdw_test.pdw_format,pdw_test.num_bits['pdw_format']],
+    [pdw_test.marked_operation,pdw_test.num_bits['marked_operation']],
+    [pdw_test.frequency,pdw_test.num_bits['frequency']],
+    [pdw_test.phase,pdw_test.num_bits['phase']],
+    [pdw_test.pulse_start_time,pdw_test.num_bits['pulse_start_time']],
+    [pdw_test.pulse_width,pdw_test.num_bits['pulse_width']],
+    [pdw_test.relative_power,pdw_test.num_bits['relative_power']],
+    [pdw_test.markers,pdw_test.num_bits['markers']],
+    [pdw_test.pulse_mode,pdw_test.num_bits['pulse_mode']],
+    [pdw_test.phase_control,pdw_test.num_bits['phase_control']],
+    [pdw_test.band_adjust,pdw_test.num_bits['band_adjust']],
+    [pdw_test.chirp_control,pdw_test.num_bits['chirp_control']],
+    [pdw_test.freq_phase_coding,pdw_test.num_bits['freq_phase_coding']],
+    [pdw_test.chirp_rate,pdw_test.num_bits['chirp_rate']],
+    [pdw_test.freq_band_map,pdw_test.num_bits['freq_band_map']])
 
 
-#pdw_test = Pdw(1,10**9,0,100000000,500000,26624,'NONE',2,0,0,1,0,0,0)
+print(word_bytes)
