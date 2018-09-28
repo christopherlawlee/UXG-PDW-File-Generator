@@ -1,9 +1,9 @@
-from math import floor
+from math import floor, frexp, ldexp
 
 class Pdw():
-    ''' Class structure for individual PDWs '''
+    ''' PDW class structure '''
 
-    num_bits = {'pdw_format': 3, 'marked_operation': 2, 'frequency': 47,
+    NUM_BITS = {'pdw_format': 3, 'marked_operation': 2, 'frequency': 47,
                 'phase': 12, 'pulse_start_time': 64, 'pulse_width': 32,
                 'relative_power': 15, 'markers': 12, 'pulse_mode': 2,
                 'phase_control': 1, 'band_adjust': 2, 'chirp_control': 3,
@@ -35,9 +35,33 @@ class Pdw():
     def convert_phase(self, phase):
         self.phase = floor((phase*2**12)/360 + 0.5)
 
-    # TODO: add convert_relative_power()
     def convert_relative_power(self, relative_power):
-        self.relative_power = relative_power
+        exponent_offset = -26
+        num_mantissa_bits = 10
+        num_exponent_bits = 5
+        
+        relative_power = 10**(relative_power/10)
+        
+        exponent = frexp(relative_power)[1]
+        exponent = exponent - exponent_offset - 1
+        
+        if exponent >= 2**num_exponent_bits:
+            self.relative_power = 0
+            return self.relative_power
+        
+        if exponent >= 0:
+            mantissa = ldexp(ldexp(
+                       relative_power, 
+                       -(exponent_offset + exponent)) - 1, 
+                       num_mantissa_bits)
+            mantissa = int(mantissa)
+        else:
+            self.relative_power = 0
+            return self.relative_power
+        
+        self.relative_power = (exponent << num_mantissa_bits) + mantissa
+
+        return self.relative_power
 
     def convert_markers(self, markers):
         valid_markers = set('123456789ABC')
@@ -66,18 +90,22 @@ class Pdw():
     def convert_chirp_rate(self, chirp_rate):
         self.chirp_rate = chirp_rate
 
-    # TODO: add read_csv()
+    # TODO: Needs work
     def read_csv(self):
-        pass
+        file_name = 'test.csv'
+        with open(file_name) as file_object:
+            lines = file_object.readlines()
+            
+        return lines
 
-    def bin_field(self, value_dec, num_bits):
+    def bin_field(self, value_dec, NUM_BITS):
         ''' This function takes a decimal integer value and converts it to a binary 
         string with a specified number of bits. The '0b' that is normally returned 
         with bin() is omitted.
         '''
         
         try:
-            result = bin(value_dec)[2:].zfill(num_bits)
+            result = bin(value_dec)[2:].zfill(NUM_BITS)
         except Exception:
             raise
         else:
@@ -111,13 +139,17 @@ class Pdw():
             raise
         else:
             return result
+    
+    def str2bin(self, byte_string):
+        # return hex(int(byte_string, 2))
+        return byte_string
 
     def word(self, *args):
         ''' This function takes in a variable number of 2-element list arguments,
         each representing fields within a pdw, and returns a list of byte strings.
         
         Keyword arguments:
-        arg = [value, num_bits]
+        arg = [value, NUM_BITS]
         '''
         
         field_list = []
@@ -128,29 +160,34 @@ class Pdw():
                 field_list.append(arg_bin)
                 bin_word_str = self.bin_word(field_list)
             result = self.byte_array(bin_word_str)
+            result = list(map(self.str2bin, result))
         except Exception:
             raise
         else:
             return result
+            # file_name = 'test.pdw'
+            # with open(file_name, 'wb') as file_object:
+            #     file_object.write(bytearray(int(i, 16) for i in result))
 
-pdw_test = Pdw(1,10**9,0,100000000,500000,26624,'NONE',2,0,0,1,0,0,0)
+
+pdw_test = Pdw(1,10**9,0,100000000,500000,0,'NONE',2,0,0,1,0,0,0)
 
 word_bytes = pdw_test.word(
-    [pdw_test.pdw_format,pdw_test.num_bits['pdw_format']],
-    [pdw_test.marked_operation,pdw_test.num_bits['marked_operation']],
-    [pdw_test.frequency,pdw_test.num_bits['frequency']],
-    [pdw_test.phase,pdw_test.num_bits['phase']],
-    [pdw_test.pulse_start_time,pdw_test.num_bits['pulse_start_time']],
-    [pdw_test.pulse_width,pdw_test.num_bits['pulse_width']],
-    [pdw_test.relative_power,pdw_test.num_bits['relative_power']],
-    [pdw_test.markers,pdw_test.num_bits['markers']],
-    [pdw_test.pulse_mode,pdw_test.num_bits['pulse_mode']],
-    [pdw_test.phase_control,pdw_test.num_bits['phase_control']],
-    [pdw_test.band_adjust,pdw_test.num_bits['band_adjust']],
-    [pdw_test.chirp_control,pdw_test.num_bits['chirp_control']],
-    [pdw_test.freq_phase_coding,pdw_test.num_bits['freq_phase_coding']],
-    [pdw_test.chirp_rate,pdw_test.num_bits['chirp_rate']],
-    [pdw_test.freq_band_map,pdw_test.num_bits['freq_band_map']])
+    [pdw_test.pdw_format,pdw_test.NUM_BITS['pdw_format']],
+    [pdw_test.marked_operation,pdw_test.NUM_BITS['marked_operation']],
+    [pdw_test.frequency,pdw_test.NUM_BITS['frequency']],
+    [pdw_test.phase,pdw_test.NUM_BITS['phase']],
+    [pdw_test.pulse_start_time,pdw_test.NUM_BITS['pulse_start_time']],
+    [pdw_test.pulse_width,pdw_test.NUM_BITS['pulse_width']],
+    [pdw_test.relative_power,pdw_test.NUM_BITS['relative_power']],
+    [pdw_test.markers,pdw_test.NUM_BITS['markers']],
+    [pdw_test.pulse_mode,pdw_test.NUM_BITS['pulse_mode']],
+    [pdw_test.phase_control,pdw_test.NUM_BITS['phase_control']],
+    [pdw_test.band_adjust,pdw_test.NUM_BITS['band_adjust']],
+    [pdw_test.chirp_control,pdw_test.NUM_BITS['chirp_control']],
+    [pdw_test.freq_phase_coding,pdw_test.NUM_BITS['freq_phase_coding']],
+    [pdw_test.chirp_rate,pdw_test.NUM_BITS['chirp_rate']],
+    [pdw_test.freq_band_map,pdw_test.NUM_BITS['freq_band_map']])
 
 
 print(word_bytes)
